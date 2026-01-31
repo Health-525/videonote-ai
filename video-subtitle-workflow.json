@@ -1,0 +1,271 @@
+{
+  "name": "Video Subtitle Extraction Workflow",
+  "nodes": [
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.assemblyai.com/v2/transcript",
+        "sendHeaders": true,
+        "specifyHeaders": "json",
+        "jsonHeaders": "{\n  \"authorization\": \"YOUR_ASSEMBLYAI_API_KEY\",\n  \"content-type\": \"application/json\"\n}\n",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"audio_url\": \"{{ $json.url }}\",\n  \"punctuate\": true,\n  \"format_text\": true\n}\n",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -704,
+        444
+      ],
+      "id": "0ca10a05-d870-4fe1-be45-95f9f96008ab",
+      "name": "HTTP Request1"
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        -480,
+        444
+      ],
+      "id": "4f5f5661-c64d-4ada-bd8d-5383118c72e3",
+      "name": "Wait",
+      "webhookId": "YOUR_WEBHOOK_ID_1"
+    },
+    {
+      "parameters": {
+        "url": "=https://api.assemblyai.com/v2/transcript/{{ $json.id }}",
+        "sendHeaders": true,
+        "specifyHeaders": "json",
+        "jsonHeaders": "{\n  \"Authorization\": \"YOUR_ASSEMBLYAI_API_KEY\"\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -256,
+        444
+      ],
+      "id": "bb8606b9-ca1a-43cf-b9b5-6a75ddf60c11",
+      "name": "HTTP Request"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=你是一位AI学习笔记助手，擅长将课程视频转化为结构化的学习记录。  \n请对输入的视频内容进行分析，生成详细笔记，包含以下部分：\n---\n🎯 视频主题\n简要说明本节视频讲解的核心内容。\n🧩 关键概念与公式\n列出主要概念、公式或算法，并简短解释。\n🧠 知识逻辑\n说明内容的逻辑关系（如从理论→推导→应用）。\n📚 学习重点\n提炼学习时最该关注的3~5个重点。\n🧰 实际应用\n说明知识在机器学习/深度学习实践中的应用。\n🗒️ 学习建议\n给出2~3条复习或扩展学习建议。\n---\n要求：\n- 输出语言清晰、简洁、条理分明；\n- 适合人类阅读；\n- 不输出JSON；\n- 若内容不属于学习或教学视频，请输出："未检测到学习相关内容。"\n参考文案：\n\"\"\"\n{{ $json.text }}\n\"\"\"\n",
+        "hasOutputParser": true,
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 2.2,
+      "position": [
+        -32,
+        192
+      ],
+      "id": "0640794c-a05f-48ac-955c-f043b586c79d",
+      "name": "AI Agent"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatDeepSeek",
+      "typeVersion": 1,
+      "position": [
+        -24,
+        416
+      ],
+      "id": "44516839-52e9-4363-99bf-1962646d925f",
+      "name": "DeepSeek Chat Model",
+      "credentials": {
+        "deepSeekApi": {
+          "id": "YOUR_DEEPSEEK_CREDENTIAL_ID",
+          "name": "DeepSeek account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "executeOnce": false,
+        "command": "=/n8n/venv/bin/yt-dlp -x --audio-format mp3 --audio-quality 192k -o /n8n/storage/audio3.mp3 \"YOUR_VIDEO_URL_HERE\""
+      },
+      "type": "n8n-nodes-base.executeCommand",
+      "typeVersion": 1,
+      "position": [
+        -1152,
+        -32
+      ],
+      "id": "29cc978b-1f3c-4ffe-ace2-e11411d4addd",
+      "name": "Execute Command"
+    },
+    {
+      "parameters": {
+        "formTitle": "音频文件",
+        "formFields": {
+          "values": [
+            {
+              "fieldLabel": "data",
+              "fieldType": "file"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.formTrigger",
+      "typeVersion": 2.3,
+      "position": [
+        -1152,
+        444
+      ],
+      "id": "1747d599-0ac1-4553-ae13-618f5f8f997d",
+      "name": "On form submission",
+      "webhookId": "YOUR_WEBHOOK_ID_2"
+    },
+    {
+      "parameters": {
+        "operation": "uploadFile",
+        "resource_type_file": "video",
+        "additionalFieldsFile": {}
+      },
+      "type": "n8n-nodes-cloudinary.cloudinary",
+      "typeVersion": 1,
+      "position": [
+        -928,
+        444
+      ],
+      "id": "81fd8ea9-4021-4ef5-8ec9-e6c88b5eb912",
+      "name": "Upload an asset from file data",
+      "credentials": {
+        "cloudinaryApi": {
+          "id": "YOUR_CLOUDINARY_CREDENTIAL_ID",
+          "name": "Cloudinary account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "toText",
+        "sourceProperty": "text",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.convertToFile",
+      "typeVersion": 1.1,
+      "position": [
+        32,
+        592
+      ],
+      "id": "7f5dec04-29d2-4236-9fd1-d3d07b9bf036",
+      "name": "Convert to File1"
+    },
+    {
+      "parameters": {
+        "jsonSchemaExample": "{\n  \"summary\": \"对音频内容的简明总结\",\n  \"main_points\": [\n    \"要点1\",\n    \"要点2\",\n    \"要点3\"\n  ],\n  \"keywords\": [\n    \"关键词1\",\n    \"关键词2\",\n    \"关键词3\"\n  ],\n  \"tone\": \"文本的语气（积极、中性、消极）\",\n  \"category\": \"内容类型（学习、技术、教程、生活等）\"\n}\n"
+      },
+      "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
+      "typeVersion": 1.3,
+      "position": [
+        104,
+        416
+      ],
+      "id": "1d81db96-21b7-410d-801e-5140295d892c",
+      "name": "Structured Output Parser"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "HTTP Request1": {
+      "main": [
+        [
+          {
+            "node": "Wait",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Convert to File1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "DeepSeek Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "On form submission": {
+      "main": [
+        [
+          {
+            "node": "Upload an asset from file data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Upload an asset from file data": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Structured Output Parser": {
+      "ai_outputParser": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_outputParser",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "PLACEHOLDER_VERSION_ID",
+  "meta": {
+    "instanceId": "PLACEHOLDER_INSTANCE_ID"
+  },
+  "id": "PLACEHOLDER_WORKFLOW_ID",
+  "tags": []
+}
